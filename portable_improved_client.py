@@ -47,23 +47,22 @@ def http_request(method="GET", path="/", start=-1, end=-1):
             # HEAD 请求, part size 就是文件大小
             return part_size 
 
-        # 先写掉 header 后可能已经读到的 body
-        offset = start
-        if body:
-            with open("output", "r+b") as f:
+        with open("output", "r+b") as f:
+            # 先写掉 header 后可能已经读到的 body
+            offset = start
+            if body:
                 f.seek(start)
                 f.write(body)
-            offset += len(body)
+                offset += len(body)
 
-        # 循环接收剩余数据
-        while offset - start < part_size:
-            chunk = s.recv(BUFFER_SIZE)
-            if not chunk:
-                break
-            with open("output", "r+b") as f:
-                f.seek(offset)
+            # 循环接收剩余数据
+            while offset - start < part_size:
+                chunk = s.recv(BUFFER_SIZE)
+                if not chunk:
+                    break
+                # f.seek(offset)
                 f.write(chunk)
-            offset += len(chunk)
+                offset += len(chunk)
 
 def get_ranges(file_size):
     chunk_size = file_size // NUM_THREADS
