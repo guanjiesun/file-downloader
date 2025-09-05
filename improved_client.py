@@ -8,7 +8,7 @@ PORT            = 8888          # 服务器端口
 NUM_THREADS     = 4             # 并发线程数
 HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
 USER_AGENT      = 'FileDownloader/1.0'
-BUFFER_SIZE     = 4096
+BUFFER_SIZE     = 1024 * 16
 FD              = os.open("output", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
 def http_request(method="GET", path="/", start=-1, end=-1):
