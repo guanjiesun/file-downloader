@@ -5,9 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 HOST        = '0.0.0.0'             # 本地回环
 PORT        = 8888                  # 监听端口
 CHUNK_SIZE  = 1024 * 16             # 每次读取文件的块大小
-# FILE_PATH   = "./assets/file.txt"                         # 返回给客户端的文件 
-FILE_PATH   = "./assets/Leah Gotti_Wet Wild And Hot.mp4"  # 返回给客户端的文件
-# FILE_PATH   = "./assets/4K.mp4"     # 返回给客户端的文件
+# FILE_PATH   = "./assets/file.txt"                         # 返回给客户端的文件
+FILE_PATH   = "./assets/Leah Gotti_Wet Wild And Hot.mp4"    # 返回给客户端的文件
+# FILE_PATH   = "./assets/4K.mp4"                           # 返回给客户端的文件
 
 def build_head_response(range_header=None):
     """生成 HEAD 响应, 只返回响应行 + 响应头, 不包含 body"""
