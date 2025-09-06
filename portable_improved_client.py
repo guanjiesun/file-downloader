@@ -49,6 +49,8 @@ def http_request(method="GET", path="/", start=-1, end=-1):
 
         with open("output", "r+b") as f:
             # TODO f.seek(start) 是核心步骤
+            # TODO 每个线程都打开同一个文件, 有独立的文件的描述符，独立的 fie table entry（自然也有独立的offset），但是inode都是一样的
+            # print(f"fd = {f.fileno()}")
             f.seek(start, 0)
             if body:
                 f.write(body)
@@ -74,6 +76,7 @@ def get_ranges(file_size):
     return ranges
 
 def main():
+    """使用 HTTP RANGE 请求多线程下载文件, 此客户端可以在Windows/Linux上运行"""
     t_begin = time.time()
 
     file_size = http_request("HEAD", "/")
