@@ -1,4 +1,3 @@
-import os
 import time
 import socket
 import threading
@@ -93,9 +92,6 @@ def main():
 
     for t in threads:
         t.join()  # 等待所有线程完成
-
-    # os.fsync(FD)
-    # os.close(FD)
 
     t_end = time.time()
     print(f"Download completed in {t_end - t_begin:.2f} seconds")
