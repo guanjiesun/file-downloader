@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 HOST        = '0.0.0.0'             # 本地回环
 PORT        = 8888                  # 监听端口
-CHUNK_SIZE  = 1024 * 16             # 每次读取文件的块大小
+CHUNK_SIZE  = 1024 * 4              # 每次读取文件的块大小
 # FILE_PATH   = "./assets/file.txt"                         # 返回给客户端的文件
 FILE_PATH   = "./assets/Leah Gotti_Wet Wild And Hot.mp4"    # 返回给客户端的文件
 # FILE_PATH   = "./assets/4K.mp4"                           # 返回给客户端的文件
@@ -50,14 +50,14 @@ def handle_client(conn, addr):
         if not chunk:
             break
         data += chunk
+
+    # 这里默认用户发来的请求是合法的 HTTP 请求, 且请求体是空的(只接受GET or HEAD)
     request = data.decode("utf-8", errors="ignore")
     print(f"=== Request From [{addr[0]}:{addr[1]}] ===\n{request}", flush=True)
 
     # 默认返回整个文件
     status_line = "HTTP/1.1 200 OK\r\n"
     headers = ""
-    # headers += "Content-Type: text/plain\r\n"
-    body = b""
 
     method, path, version = request.split(" ", 2)
     method = method.upper()
@@ -103,14 +103,15 @@ def handle_client(conn, addr):
             headers += f"Content-Range: bytes {start}-{end}/{file_size}\r\n"
             headers += f"Content-Length: {length}\r\n"
             headers += "\r\n"
-            # 先把响应头发送出去
+            # 先把响应头 + 状态行发送出去
             conn.sendall((status_line + headers).encode())
 
+            # 再发送文件内容 (响应体)
             with open(FILE_PATH, "rb") as f:
                 f.seek(start)
-                remaining = end - start + 1
+                remaining = length
                 while remaining > 0:
-                    chunk = f.read(min(CHUNK_SIZE, remaining))
+                    chunk = f.read(CHUNK_SIZE)
                     if not chunk:
                         break
                     conn.sendall(chunk)
