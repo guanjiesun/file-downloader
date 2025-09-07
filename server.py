@@ -51,8 +51,7 @@ def handle_client(conn, addr):
             break
         data += chunk
     request = data.decode("utf-8", errors="ignore")
-    print("=== 请求报文 ===")
-    print(request)
+    print(f"=== Request From [{addr[0]}:{addr[1]}] ===\n{request}", flush=True)
 
     # 默认返回整个文件
     status_line = "HTTP/1.1 200 OK\r\n"
