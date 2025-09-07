@@ -3,7 +3,7 @@ import socket
 from concurrent.futures import ThreadPoolExecutor
 
 HOST        = '0.0.0.0'             # 本地回环
-PORT        = 8888                  # 监听端口
+PORT        = 9999                  # 监听端口
 CHUNK_SIZE  = 1024 * 4              # 每次读取文件的块大小
 # FILE_PATH   = "./assets/file.txt"                         # 返回给客户端的文件
 FILE_PATH   = "./assets/Leah Gotti_Wet Wild And Hot.mp4"    # 返回给客户端的文件
@@ -107,15 +107,9 @@ def handle_client(conn, addr):
             conn.sendall((status_line + headers).encode())
 
             # 再发送文件内容 (响应体)
+            # 使用 sendfile 发送文件内容
             with open(FILE_PATH, "rb") as f:
-                f.seek(start)
-                remaining = length
-                while remaining > 0:
-                    chunk = f.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    conn.sendall(chunk)
-                    remaining -= len(chunk)
+                conn.sendfile(f, offset=start, count=length)
         else:
             status_line = "HTTP/1.1 416 Range Not Satisfiable\r\n"
             headers += f"Content-Range: bytes */{file_size}\r\n"
