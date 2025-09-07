@@ -2,7 +2,7 @@ import os
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
-HOST        = '0.0.0.0'             # 本地回环
+HOST        = '0.0.0.0'             # 主机地址
 PORT        = 9999                  # 监听端口
 CHUNK_SIZE  = 1024 * 4              # 每次读取文件的块大小
 # FILE_PATH   = "./assets/file.txt"                         # 返回给客户端的文件
