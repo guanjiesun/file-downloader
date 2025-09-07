@@ -137,7 +137,6 @@ def handle_client(conn, addr):
 
     conn.close()
 
-
 def run_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -145,9 +144,12 @@ def run_server():
         s.listen(16)
         print(f"Serving on {HOST}:{PORT}")
         with ThreadPoolExecutor(max_workers=8) as executor:
-            while True:
-                conn, addr = s.accept()
-                executor.submit(handle_client, conn, addr)
+            try:
+                while True:
+                    conn, addr = s.accept()
+                    executor.submit(handle_client, conn, addr)
+            except KeyboardInterrupt:
+                print("\nServer exited")
 
 if __name__ == "__main__":
     run_server()
