@@ -141,7 +141,7 @@ def run_server():
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
         s.listen(16)
-        print(f"Serving on {HOST}:{PORT}")
+        print(f"\nServing on {HOST}:{PORT}\n")
         with ThreadPoolExecutor(max_workers=8) as executor:
             try:
                 while True:
