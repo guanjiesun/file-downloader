@@ -9,8 +9,6 @@ NUM_THREADS     = 4             # 并发线程数
 HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
 USER_AGENT      = 'FileDownloader/1.0'
 BUFFER_SIZE     = 4096
-# FD              = os.open("output", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
-# FILE_LOCK       = threading.Lock()
 
 def http_request(method="GET", path="/", start=-1, end=-1):
     # 构造 HTTP 请求报文
@@ -48,14 +46,14 @@ def http_request(method="GET", path="/", start=-1, end=-1):
             return part_size 
 
         with open("output", "r+b") as f:
-            # TODO f.seek(start) 是核心步骤
             # TODO 每个线程都打开同一个文件, 有独立的文件的描述符，独立的 fie table entry（自然也有独立的offset），但是inode都是一样的
-            # print(f"fd = {f.fileno()}")
+            # TODO f.seek(start) 是核心步骤
             f.seek(start, 0)
             if body:
                 f.write(body)
 
             # 循环接收剩余数据
+            # f.seek(0, 1) 和 f.tell() 等价, 从 file table entry 获取 offset
             while f.seek(0, 1) - start < part_size:
                 chunk = s.recv(BUFFER_SIZE)
                 if not chunk:
