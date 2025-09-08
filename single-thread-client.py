@@ -1,14 +1,12 @@
-import os
 import time
 import socket
-import threading
+from pathlib import Path
 
 HOST            = '127.0.0.1'   # 服务器地址
 PORT            = 8888          # 服务器端口
 HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
 USER_AGENT      = 'FileDownloader/1.0'
-BUFFER_SIZE     = 1024 * 16
-FD              = os.open("output", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+CHUNK_SIZE      = 1024 * 16     # socket.recv 每次读取的字节数
 
 def http_request(method="GET", path="/"):
     # 构造 HTTP 请求报文
@@ -28,40 +26,40 @@ def http_request(method="GET", path="/"):
         response = b""
         while b"\r\n\r\n" not in response:
             # 先把响应头读完
-            chunk = s.recv(BUFFER_SIZE)
+            chunk = s.recv(CHUNK_SIZE)
             if not chunk:
                 break
             response += chunk
 
-        header_data, body = response.split(b"\r\n\r\n", 1)
-        header_lines = header_data.decode().split("\r\n")
+        # 解析响应头
+        response_headers, body = response.split(b"\r\n\r\n", 1)
+        print(response_headers.decode(), flush=True)
+        header_lines = response_headers.decode().split("\r\n")
         status_line = header_lines[0]
         headers = {k: v for k, v in (line.split(": ", 1) for line in header_lines[1:])}
         file_size = int(headers.get("Content-Length", 0))
+        
+        # 将收到的响应体数据写到文件
+        with open("output", "wb") as f:
+            # 先写 header 后可能已经读到的 body
+            remaining = file_size
+            if body:
+                f.write(body)
+                remaining -= len(body)
 
-        # 先写掉 header 后可能已经读到的 body
-        remaining = file_size
-        if body:
-            os.write(FD, body)
-            remaining -= len(body)
-
-        # 循环接收剩余数据
-        while remaining > 0:
-            chunk = s.recv(BUFFER_SIZE)
-            if not chunk:
-                break
-            os.write(FD, chunk)
-            remaining -= len(chunk)
+            # 循环接收剩余数据
+            while remaining > 0:
+                chunk = s.recv(CHUNK_SIZE)
+                if not chunk:
+                    break
+                f.write(chunk)
+                remaining -= len(chunk)
 
 def main():
     t_begin = time.time()
-
     http_request("GET", "/")
-    # os.fsync(FD)
-    os.close(FD)
-
     t_end = time.time()
-    print(f"Download completed in {t_end - t_begin:.2f} seconds")
+    print(f"\nDownload completed in {t_end - t_begin:.4f} seconds")
 
 if __name__ == "__main__":
     main()
