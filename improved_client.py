@@ -11,7 +11,7 @@ USER_AGENT      = 'FileDownloader/1.0'
 BUFFER_SIZE     = 1024 * 16
 FD              = os.open("output", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
-def http_request(method="GET", path="/", start=-1, end=-1):
+def http_request(method="GET", path="/leah-gotti.mp4", start=-1, end=-1):
     # 构造 HTTP 请求报文
     request_line = f"{method} {path} {HTTP_VERSION}\r\n"
     headers = [
@@ -76,7 +76,8 @@ def get_ranges(file_size):
 def main():
     t_begin = time.time()
 
-    file_size = http_request("HEAD", "/")
+    target_file_path = "/leah-gotti.mp4"
+    file_size = http_request("HEAD", target_file_path)
     print(f"File size: {file_size} bytes")
     for start, end in get_ranges(file_size):
         print(start,'\t', end)
@@ -84,7 +85,7 @@ def main():
     threads = list()
     for start, end in get_ranges(file_size):
         # 创建线程下载每个区间
-        t = threading.Thread(target=http_request, args=('GET', '/', start, end))
+        t = threading.Thread(target=http_request, args=('GET', target_file_path, start, end))
         threads.append(t)
         t.start()
 
