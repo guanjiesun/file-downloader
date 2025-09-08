@@ -2,13 +2,14 @@ import time
 import socket
 from pathlib import Path
 
-HOST            = '127.0.0.1'   # 服务器地址
-PORT            = 8888          # 服务器端口
-HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
-USER_AGENT      = 'FileDownloader/1.0'
-CHUNK_SIZE      = 1024 * 16     # socket.recv 每次读取的字节数
+HOST            = '192.168.31.200'      # 服务器地址
+PORT            = 8888                  # 服务器端口
+HTTP_VERSION    = "HTTP/1.1"            # HTTP 版本
+USER_AGENT      = 'Single-FD/0.1'       # User-Agent 头
+CHUNK_SIZE      = 1024 * 16             # socket.recv 每次读取的字节数
+CURR_FOLDER   = Path(__file__).parent
 
-def http_request(method="GET", path="/"):
+def http_request(method="GET", path="/leah-gotti.mp4"):
     # 构造 HTTP 请求报文
     request_line = f"{method} {path} {HTTP_VERSION}\r\n"
     headers = [
@@ -18,14 +19,14 @@ def http_request(method="GET", path="/"):
     ]
     request = request_line + "\r\n".join(headers) + "\r\n\r\n"
 
-    # 建立 TCP 连接并发送请求
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # 建立 TCP 连接并发送请求
         s.connect((HOST, PORT))
         s.sendall(request.encode())
 
         response = b""
         while b"\r\n\r\n" not in response:
-            # 先把响应头读完
+            # 读取响应头
             chunk = s.recv(CHUNK_SIZE)
             if not chunk:
                 break
@@ -35,13 +36,19 @@ def http_request(method="GET", path="/"):
         response_headers, body = response.split(b"\r\n\r\n", 1)
         print(response_headers.decode(), flush=True)
         header_lines = response_headers.decode().split("\r\n")
-        status_line = header_lines[0]
+        _, status_code, _ = header_lines[0].split(' ', maxsplit=2)
+        if status_code == '404':
+            print("File not found on server.")
+            return
         headers = {k: v for k, v in (line.split(": ", 1) for line in header_lines[1:])}
         file_size = int(headers.get("Content-Length", 0))
+
+        # 文件保存在当前文件夹下
+        dst_file_path = CURR_FOLDER / path.lstrip("/")
         
-        # 将收到的响应体数据写到文件
-        with open("output", "wb") as f:
-            # 先写 header 后可能已经读到的 body
+        # 将响应体写到文件
+        with open(dst_file_path, "wb") as f:
+            # 先将第一次 recv 到的数据 body 写入文件
             remaining = file_size
             if body:
                 f.write(body)
@@ -57,7 +64,8 @@ def http_request(method="GET", path="/"):
 
 def main():
     t_begin = time.time()
-    http_request("GET", "/")
+    target_file = "leah-gotti.mp4"
+    http_request("GET", "/" + target_file)
     t_end = time.time()
     print(f"\nDownload completed in {t_end - t_begin:.4f} seconds")
 
