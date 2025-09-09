@@ -4,9 +4,9 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 HOST        = '0.0.0.0'             # 主机地址
-PORT        = 8888                  # 监听端口
+PORT        = 8080                  # 监听端口
 CHUNK_SIZE  = 1024 * 4              # 每次读取文件的块大小jjj
-HTTP_VERSION = "HTTP/1.1"        # HTTP 版本
+HTTP_VERSION = "HTTP/1.1"           # HTTP 版本
 ASSETS_PATH = Path(__file__).parent / "assets"
 
 def build_head_response(range_header=None, file_size=0):
@@ -57,9 +57,15 @@ def handle_client(conn, addr):
     method = method.upper()
     file_path = ASSETS_PATH / path.lstrip("/")
 
+    if path == "/":
+        # 请求根目录而不是一个文件，返回 403
+        response = "HTTP/1.1 403 Forbidden\r\n\r\n"
+        conn.sendall(response.encode())
+        conn.close()
+        return
     if not file_path.exists():
         # 文件不存在，返回 404
-        response = "HTTP/1.1 404 Not Found\r\n\r\nFile not found"
+        response = "HTTP/1.1 404 Not Found\r\n\r\n"
         conn.sendall(response.encode())
         conn.close()
         return
