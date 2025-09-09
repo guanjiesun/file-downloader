@@ -65,6 +65,7 @@ def http_request(method="GET", path="/leah-gotti.mp4"):
 def main():
     t_begin = time.time()
     target_file = "leah-gotti.mp4"
+    assert target_file, "Please specify a target file"      # target_file 不能为空
     http_request("GET", "/" + target_file)
     t_end = time.time()
     print(f"\nDownload completed in {t_end - t_begin:.4f} seconds")
