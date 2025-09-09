@@ -4,7 +4,7 @@ import socket
 import threading
 
 HOST            = '127.0.0.1'   # 服务器地址
-PORT            = 8888          # 服务器端口
+PORT            = 8080          # 服务器端口
 NUM_THREADS     = 4             # 并发线程数
 HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
 USER_AGENT      = 'FileDownloader/1.0'

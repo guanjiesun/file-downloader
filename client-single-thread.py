@@ -3,7 +3,7 @@ import socket
 from pathlib import Path
 
 HOST            = '192.168.31.200'      # 服务器地址
-PORT            = 8888                  # 服务器端口
+PORT            = 8080                  # 服务器端口
 HTTP_VERSION    = "HTTP/1.1"            # HTTP 版本
 USER_AGENT      = 'Single-FD/0.1'       # User-Agent 头
 CHUNK_SIZE      = 1024 * 16             # socket.recv 每次读取的字节数
