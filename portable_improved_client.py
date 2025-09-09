@@ -9,7 +9,7 @@ HTTP_VERSION    = "HTTP/1.1"    # HTTP 版本
 USER_AGENT      = 'FileDownloader/1.0'
 BUFFER_SIZE     = 4096
 
-def http_request(method="GET", path="/", start=-1, end=-1):
+def http_request(method="GET", path="/leah-gotti.mp4", start=-1, end=-1):
     # 构造 HTTP 请求报文
     request_line = f"{method} {path} {HTTP_VERSION}\r\n"
     headers = [
@@ -44,7 +44,8 @@ def http_request(method="GET", path="/", start=-1, end=-1):
             # HEAD 请求, part size 就是文件大小
             return part_size 
 
-        with open("output", "r+b") as f:
+        target_file = path.lstrip("/")
+        with open(target_file, "r+b") as f:
             # TODO 每个线程都打开同一个文件, 有独立的文件的描述符，独立的 fie table entry（自然也有独立的offset），但是inode都是一样的
             # TODO f.seek(start) 是核心步骤
             f.seek(start, 0)
@@ -76,8 +77,9 @@ def main():
     """使用 HTTP RANGE 请求多线程下载文件, 此客户端可以在Windows/Linux上运行"""
     t_begin = time.time()
 
-    file_size = http_request("HEAD", "/")
-    with open("output", "wb") as f:
+    target_file = "leah-gotti.mp4"
+    file_size = http_request("HEAD", "/" + target_file)
+    with open(target_file, "wb") as f:
         f.truncate(file_size)
     print(f"File size: {file_size} bytes")
     for start, end in get_ranges(file_size):
@@ -86,7 +88,7 @@ def main():
     threads = list()
     for start, end in get_ranges(file_size):
         # 创建线程下载每个区间
-        t = threading.Thread(target=http_request, args=('GET', '/', start, end))
+        t = threading.Thread(target=http_request, args=('GET', "/" + target_file, start, end))
         threads.append(t)
         t.start()
 
