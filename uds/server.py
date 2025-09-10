@@ -6,6 +6,7 @@ CHUNK_SIZE      = 1024 * 4
 BACKLOG         = 16
 
 def main():
+    """Unix Domain and TCP socket based Server"""
     # If the socket file already exists, remove it
     if SERVER_ADDRESS.exists():
         SERVER_ADDRESS.unlink()

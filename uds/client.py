@@ -5,6 +5,7 @@ SERVER_ADDRESS = Path("/tmp/uds_socket")
 CHUNK_SIZE = 1024 * 4
 
 def main():
+    """Unix Domain and TCP socket based Client"""
     # Create Unix Domain Socket in client side
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
         s.connect(str(SERVER_ADDRESS))
