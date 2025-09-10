@@ -23,3 +23,6 @@
 
 ### README and gitignore
 > Self-evident
+
+### uds folder
+> Play with Unix domain socket and present a deadlock scene when Client without shutdown code"
