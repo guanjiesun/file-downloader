@@ -29,7 +29,6 @@ def main():
 
                 print(f"[From client]: {request.decode()}")
                 conn.sendall(b"Hello from server")
-                conn.shutdown(socket.SHUT_WR)
 
 if __name__ == "__main__":
     main()
