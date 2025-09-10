@@ -151,6 +151,8 @@ def handle_client(conn, addr):
 
 def run_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # Server side: socket() -> bind() -> listen() -> accept()
+        # Client side: socket() -> connnect()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
         s.listen(16)
