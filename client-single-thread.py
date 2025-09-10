@@ -6,7 +6,7 @@ HOST            = '192.168.31.200'      # 服务器地址
 PORT            = 8080                  # 服务器端口
 HTTP_VERSION    = "HTTP/1.1"            # HTTP 版本
 USER_AGENT      = 'Single-FD/0.1'       # User-Agent 头
-CHUNK_SIZE      = 1024 * 16             # socket.recv 每次读取的字节数
+CHUNK_SIZE      = 1024 * 16             # socket 对象每次读取的字节数
 CURR_FOLDER   = Path(__file__).parent
 
 def http_request(method="GET", path="/leah-gotti.mp4"):
@@ -23,6 +23,7 @@ def http_request(method="GET", path="/leah-gotti.mp4"):
         # 建立 TCP 连接并发送请求
         s.connect((HOST, PORT))
         s.sendall(request.encode())
+        s.shutdown(socket.SHUT_WR)      # 客户端关闭写端，表示请求发送完毕, 不再发送数据
 
         response = b""
         while b"\r\n\r\n" not in response:
@@ -48,7 +49,7 @@ def http_request(method="GET", path="/leah-gotti.mp4"):
         
         # 将响应体写到文件
         with open(dst_file_path, "wb") as f:
-            # 先将第一次 recv 到的数据 body 写入文件
+            # 先将第一次接收到的数据 body 写入文件
             remaining = file_size
             if body:
                 f.write(body)
