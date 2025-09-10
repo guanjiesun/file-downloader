@@ -1,8 +1,9 @@
 import socket
 from pathlib import Path
 
-SERVER_ADDRESS = Path("/tmp/uds_socket")
-CHUNK_SIZE = 1024
+SERVER_ADDRESS  = Path("/tmp/uds_socket")
+CHUNK_SIZE      = 1024 * 4
+BACKLOG         = 16
 
 def main():
     # If the socket file already exists, remove it
