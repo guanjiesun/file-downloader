@@ -4,11 +4,14 @@
 ### server-zero-copy.py
 > A web server to supply files use socket.sendfiles method
 
+### client-serial.py
+> File downloader in a single thread way
+
 ### client-async.py
-> Empty, not yet to implement it.
+> File downloader in a async way
 
 ### client-improved.py
-> An fast file downloader, improved based on client-bad.py (Write data to file in a streaming way)
+> An fast file downloader, improved based on client-serial.py (Write data to file in a streaming way)
 > Using pwrite and HTTP if-range tech, pwrite is unavaiable in Windows OS
 
 ### client-portable.py
