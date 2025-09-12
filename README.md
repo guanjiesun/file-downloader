@@ -4,9 +4,6 @@
 ### server-zero-copy.py
 > A web server to supply files use socket.sendfiles method
 
-### client-bad.py
-> A client to download file, but very slow, omit this file
-
 ### client-async.py
 > Empty, not yet to implement it.
 
