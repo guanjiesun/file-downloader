@@ -1,73 +1,74 @@
 import os
 import time
-import socket
 import asyncio
 
-HOST = '127.0.0.1'   # 服务器地址
-PORT = 8888          # 服务器端口
-NUM_COROS = 8        # 并发协程数
-HTTP_VERSION = "HTTP/1.1"
-CLIENT_NAME = 'FileDownloader/1.0'
-FD = os.open("output", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+HOST            = '127.0.0.1'   # 服务器地址
+PORT            = 8080          # 服务器端口
+NUM_COROS       = 8             # 并发协程数
+CHUNK_SIZE      = 1024 * 4
+HTTP_VERSION    = "HTTP/1.1"
+CLIENT_NAME     = 'AsyncDownloader/0.1'
+TARGET_FILE     = 'leah-gotti.mp4'
+FD = os.open(TARGET_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
-async def http_request(method="GET", path="/", range_header=None):
-    # 构造 HTTP GET / HEAD 请求报文
+async def http_request(method="GET", path="/", start=-1, end=-1):
+    # HTTP GET or HTTP HEAD
     method = method.upper()
+    if method not in ['GET', 'HEAD']:
+        raise Exception("Wrong request method, only GET and HEAD are allowed!")
+    if method == 'GET' and (start == -1 or end == -1):
+        raise Exception("Wrong start or end!")
+
+    # 构造请求行和请求头
     request_line = f"{method} {path} {HTTP_VERSION}\r\n"
     headers = [
         f"Host: {HOST}:{PORT}",
         f"User-Agent: {CLIENT_NAME}",
         "Connection: close",
     ]
-    if range_header:
-        headers.append(f"Range: {range_header}")
+    if method == 'GET':
+        headers.append(f"Range: bytes={start}-{end}")
     request = request_line + "\r\n".join(headers) + "\r\n\r\n"
 
-    # 用 asyncio.open_connection 建立异步连接
+    # 建立异步连接, 发送请求
     reader, writer = await asyncio.open_connection(HOST, PORT)
-
-    # 发送请求
     writer.write(request.encode())
-    await writer.drain()
+    await writer.drain()    # 相当于异步版本的 socket.sendall 方法
 
     # 异步接收响应
     response = b""
-    while True:
-        chunk = await reader.read(4096)
+    while b"\r\n\r\n" not in response:
+        chunk = await reader.read(CHUNK_SIZE)
         if not chunk:
             break
         response += chunk
+    
+    # 解析状态行响应头
+    header_data, body = response.split(b"\r\n\r\n", 1)
+    header_lines = header_data.decode().split("\r\n")
+    status_line = header_lines[0]
+    headers = {k: v for k, v in (line.split(": ", 1) for line in header_lines[1:])}
+    part_size = int(headers.get("Content-Length", 0))
+    if method == "GET":
+        if part_size != (end-start+1):
+            raise Exception("Get unexpected part size!")
+
+    if method == "HEAD":
+        return part_size
+
+    if body:
+        os.pwrite(FD, body, start)
+        start += len(body)
+
+    while start < end:
+        chunk = await reader.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        os.pwrite(FD, chunk, start)
+        start += len(chunk)
 
     writer.close()
     await writer.wait_closed()
-
-    return response
-
-def parse_response(response_bytes):
-    # 把响应转成字符串，方便查找头和体的分隔符
-    response_str = response_bytes.decode(errors="ignore")
-    
-    # 找到 header 和 body 的分隔符
-    sep = response_str.find("\r\n\r\n")
-    if sep == -1:
-        return None, None           # 没有找到分隔符，说明响应有问题
-    headers = response_str[:sep]
-    body = response_bytes[sep+4:]   # 注意这里用原始的 bytes 截取 body
-    return headers, body
-
-async def get_file_size():
-    """利用 HEAD 请求获取文件大小"""
-    resp = await http_request("HEAD", "/")
-    headers, _ = parse_response(resp)
-    content_length_header = None
-    for line in headers.split("\r\n"):
-        if line.startswith("Content-Length"):
-            content_length_header = line
-            break
-    if content_length_header:
-        _, length = content_length_header.split(":", 1)
-        return int(length.strip())
-    return -1  # 获取失败
 
 def get_ranges(file_size):
     chunk_size = file_size // NUM_COROS
@@ -80,27 +81,24 @@ def get_ranges(file_size):
         else:
             end = (i + 1) * chunk_size - 1
         ranges.append((start, end))
+    max_width = len(str(file_size))
+    for start, end in ranges:
+        print(f"{start:>{max_width}} --> {end:<{max_width}}")
     return ranges
-
-async def worker(start, end):
-    range_header_content = f"bytes={start}-{end}"
-    resp = await http_request("GET", "/", range_header_content)
-    _, body = parse_response(resp)
-    os.pwrite(FD, body, start)
 
 async def main():
     t_begin = time.time()
 
-    file_size = await get_file_size()
-    print(f"file size: {file_size}")
+    # 使用 HEAD 请求获取文件大小
+    file_size = await http_request("HEAD", "/" + TARGET_FILE)
+    if file_size == 0:
+        raise Exception("Get file size unsucessfully!")
+    print(f"file size: {file_size}", flush=True)
     ranges = get_ranges(file_size)
-    print("Download ranges:", ranges)
-    coros = list()
-    for start, end in ranges:
-        # 创建协程下载每个区间
-        coro = worker(start, end)
-        coros.append(coro)
+
+    coros = [http_request("GET", "/"+TARGET_FILE, start, end) for start, end in ranges]
     await asyncio.gather(*coros)        
+
     os.fsync(FD)
     os.close(FD)
 
