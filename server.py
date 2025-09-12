@@ -2,11 +2,12 @@ import socket
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-HOST        = '0.0.0.0'             # 主机地址
-PORT        = 8080                  # 监听端口
-CHUNK_SIZE  = 1024 * 4              # 每次读取文件的块大小jjj
-HTTP_VERSION = "HTTP/1.1"           # HTTP 版本
-ASSETS_PATH = Path(__file__).parent / "assets"
+HOST                = '0.0.0.0'             # 主机地址
+PORT                = 8080                  # 监听端口
+CHUNK_SIZE          = 1024 * 4              # 每次读取文件的块大小jjj
+HTTP_VERSION        = "HTTP/1.1"            # HTTP 版本
+MAX_HEADER_SIZE     = 1024 * 8              # 最大请求头长度
+ASSETS_PATH         = Path(__file__).parent / "assets"
 
 def build_head_response(range_header=None, file_size=0):
     """生成 HEAD 响应, 只返回响应行 + 响应头, 不包含 body"""
@@ -34,48 +35,53 @@ def build_head_response(range_header=None, file_size=0):
     return (status_line + headers + "\r\n").encode()
 
 def handle_client(conn, addr):
-    # 处理客户端请求
+    """ Handle request from client """
     data = b""
     while b"\r\n\r\n" not in data:
+        # obtain reqeust line and request headers first
         chunk = conn.recv(CHUNK_SIZE)
         if not chunk:
             break
         data += chunk
+        if len(data) > MAX_HEADER_SIZE:
+            # make sure the length of header is not great than MAX_HEADER_SIZE
+            print(f"Request too large from {addr}")
+            response = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n"
+            conn.sendall(response.encode())
+            conn.close()
+            return
 
     # 这里默认用户发来的请求是合法的 HTTP 请求, 且请求体是空的(只接受GET or HEAD)
     request = data.decode("utf-8", errors="ignore")
     request_line = request.split("\r\n")[0]
     print(f"=== Request From [{addr[0]}:{addr[1]}] ===\n{request}", flush=True)
 
-    # 默认返回整个文件
-    status_line = "HTTP/1.1 200 OK\r\n"
-    headers = ""
-
-    # 解析请求报文
+    # parse request, obtain request line and request headers
     method, path, http_version = request_line.split(" ", maxsplit=2)
     method = method.upper()
     file_path = ASSETS_PATH / path.lstrip("/")
 
+    # validate request
     if path == "/":
-        # 请求根目录而不是一个文件，返回 403
+        # path is illegal, return 403
         response = "HTTP/1.1 403 Forbidden\r\n\r\n"
         conn.sendall(response.encode())
         conn.close()
         return
     if not file_path.exists():
-        # 文件不存在，返回 404
+        # File not found, return 404
         response = "HTTP/1.1 404 Not Found\r\n\r\n"
         conn.sendall(response.encode())
         conn.close()
         return
     if method not in ("GET", "HEAD"):
-        # 只支持 GET 和 HEAD 方法
+        # Method not allowed, return 405 (Only HEAD and HEAD are allowed)
         response = "HTTP/1.1 405 Method Not Allowed\r\n\r\n"
         conn.sendall(response.encode())
         conn.close()
         return
     if http_version != HTTP_VERSION:
-        # 只支持 HTTP/1.1
+        # Only HTTP/1.1 is supported
         response = "HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n"
         conn.sendall(response.encode())
         conn.close()
@@ -112,7 +118,7 @@ def handle_client(conn, addr):
             length = end - start + 1
 
             status_line = "HTTP/1.1 206 Partial Content\r\n"
-            headers += f"Content-Range: bytes {start}-{end}/{file_size}\r\n"
+            headers  = f"Content-Range: bytes {start}-{end}/{file_size}\r\n"
             headers += f"Content-Length: {length}\r\n"
             headers += "\r\n"
             # 先把响应头 + 状态行发送出去
@@ -130,12 +136,13 @@ def handle_client(conn, addr):
                     remaining -= len(chunk)
         else:
             status_line = "HTTP/1.1 416 Range Not Satisfiable\r\n"
-            headers += f"Content-Range: bytes */{file_size}\r\n"
+            headers  = f"Content-Range: bytes */{file_size}\r\n"
             headers += "\r\n"
             conn.sendall((status_line + headers).encode())
     else:
         # 没有 Range header，返回整个文件
-        headers += f"Content-Length: {file_size}\r\n"
+        status_line = "HTTP/1.1 200 OK\r\n"
+        headers  = f"Content-Length: {file_size}\r\n"
         headers += "\r\n"
         conn.sendall((status_line + headers).encode())
         remaining = file_size
