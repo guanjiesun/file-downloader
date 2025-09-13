@@ -168,6 +168,7 @@ def run_server():
             try:
                 while True:
                     conn, addr = s.accept()
+                    conn.settimeout(5)
                     executor.submit(handle_client, conn, addr)
             except KeyboardInterrupt:
                 print("\nServer exited")
