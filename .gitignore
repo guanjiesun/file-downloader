@@ -1,4 +1,5 @@
 assets/
 output
 *.mp4
+*__pycache__/
 go-client/go-client
