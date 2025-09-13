@@ -26,3 +26,6 @@
 
 ### uds folder
 > Play with Unix domain socket and present a deadlock scene when Client without shutdown code"
+
+### go-client folder
+> A serial file downloader client written by Go
