@@ -1,6 +1,12 @@
 import socket
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
+from pymongo import MongoClient
+from mongodb.connect import mongo_url, DB, COLLECTION
+mongo_client = MongoClient(mongo_url)
+collection = mongo_client[DB][COLLECTION]
 
 HOST                = '0.0.0.0'             # 主机地址
 PORT                = 8080                  # 监听端口
@@ -60,6 +66,16 @@ def handle_client(conn, addr):
     method, path, http_version = request_line.split(" ", maxsplit=2)
     method = method.upper()
     file_path = ASSETS_PATH / path.lstrip("/")
+    # insert doc to MongoDB
+    doc = {
+        "method": method,
+        "path": path,
+        "version": http_version,
+        "request-time": datetime.now(),
+        "remote-ip": addr[0],
+        "remote-port": addr[1],
+    }
+    collection.insert_one(doc)
 
     # validate request
     if path == "/":
