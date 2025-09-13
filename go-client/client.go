@@ -25,7 +25,7 @@ func httpRequest(method, path string) error {
 	request := fmt.Sprintf("%s %s %s\r\nHost: %s:%d\r\nUser-Agent: %s\r\nConnection: close\r\n\r\n",
 		method, path, HTTP_VERSION, HOST, PORT, USER_AGENT)
 
-	addr := fmt.Sprintf("%s:%d", HOST, PORT)
+	addr := net.JoinHostPort(HOST, fmt.Sprintf("%d", PORT))
 	conn, err := net.Dial("tcp", addr)
 	if err != nil { return err }
 	defer conn.Close()
@@ -77,7 +77,7 @@ func httpRequest(method, path string) error {
 	if err != nil {return err}
 	defer f.Close()
 
-	// 写入响应体
+	// 将响应体数据写入文件
 	remaining := fileSize
 	buf := make([]byte, CHUNK_SIZE)
 	for remaining > 0 {
