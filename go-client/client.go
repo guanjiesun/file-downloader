@@ -27,16 +27,12 @@ func httpRequest(method, path string) error {
 
 	addr := fmt.Sprintf("%s:%d", HOST, PORT)
 	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	defer conn.Close()
 
 	// 发送请求, conn.Write = conn.send
 	_, err = conn.Write([]byte(request))
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 
 	reader := bufio.NewReader(conn)
 
@@ -44,12 +40,8 @@ func httpRequest(method, path string) error {
 	responseHeaders := ""
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-		if line == "\r\n" {
-			break
-		}
+		if err != nil { return err }
+		if line == "\r\n" { break }
 		responseHeaders += line
 	}
 
@@ -71,25 +63,18 @@ func httpRequest(method, path string) error {
 	// 解析 Content-Length
 	headersMap := make(map[string]string)
 	for _, line := range lines[1:] {
-		if line == "" {
-			continue
-		}
+		if line == "" {continue}
 		parts := strings.SplitN(line, ": ", 2)
-		if len(parts) == 2 {
-			headersMap[parts[0]] = parts[1]
-		}
+		if len(parts) == 2 {headersMap[parts[0]] = parts[1]}
 	}
 	fileSize := 0
-	if val, ok := headersMap["Content-Length"]; ok {
-		fileSize, _ = strconv.Atoi(val)
-	}
+	val, ok := headersMap["Content-Length"];
+	if ok {fileSize, _ = strconv.Atoi(val)}
 
 	// 文件保存路径
 	dstFilePath := filepath.Join(".", path[1:])
 	f, err := os.Create(dstFilePath)
-	if err != nil {
-		return err
-	}
+	if err != nil {return err}
 	defer f.Close()
 
 	// 写入响应体
@@ -97,15 +82,9 @@ func httpRequest(method, path string) error {
 	buf := make([]byte, CHUNK_SIZE)
 	for remaining > 0 {
 		n, err := reader.Read(buf)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if n == 0 {
-			break
-		}
-		if n > remaining {
-			n = remaining
-		}
+		if err != nil && err != io.EOF { return err }
+		if n == 0 { break }
+		if n > remaining { n = remaining }
 		f.Write(buf[:n])
 		remaining -= n
 	}
@@ -115,6 +94,7 @@ func httpRequest(method, path string) error {
 }
 
 func main() {
+	/* Download target file from a HTTP file server */
 	start := time.Now()
 
 	targetFile := "leah-gotti.mp4"
@@ -123,9 +103,7 @@ func main() {
 		return
 	}
 	err := httpRequest("GET", "/"+targetFile)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
+	if err != nil { fmt.Println("Error:", err) }
 
 	fmt.Printf("Time elapsed: %.4f seconds\n", time.Since(start).Seconds())
 }
